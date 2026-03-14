@@ -5,56 +5,258 @@
 
 using namespace std;
 
-// 定義資料結構：一筆消費紀錄
-struct Expense {
+// =======================
+// Expense 類別
+// =======================
+class Expense {
+public:
     string date;
     string item;
+    string category;
     int amount;
+
+    Expense(string d, string i, string c, int a) {
+        date = d;
+        item = i;
+        category = c;
+        amount = a;
+    }
+
+    void display() const {
+        cout << "[" << date << "] "
+             << item << " | "
+             << category << " | "
+             << amount << " 元" << endl;
+    }
 };
 
-// 顯示所有紀錄的函式
-void displayAll(const string& filename) {
+// =======================
+// 讀取檔案
+// =======================
+vector<Expense> loadExpenses(const string& filename) {
+
+    vector<Expense> list;
     ifstream inFile(filename);
-    string d, i;
+
+    string d, i, c;
     int a;
+
+    while (inFile >> d >> i >> c >> a) {
+        list.push_back(Expense(d, i, c, a));
+    }
+
+    inFile.close();
+    return list;
+}
+
+// =======================
+// 顯示所有紀錄
+// =======================
+void displayAll(const vector<Expense>& list) {
+
     int total = 0;
 
     cout << "\n--- 歷史消費清單 ---" << endl;
-    while (inFile >> d >> i >> a) {
-        cout << "[" << d << "] " << i << ": " << a << " 元" << endl;
-        total += a;
+
+    for (const Expense& e : list) {
+        e.display();
+        total += e.amount;
     }
+
     cout << "--------------------" << endl;
     cout << "累計支出合計: " << total << " 元" << endl;
-    inFile.close();
 }
 
+// =======================
+// 新增紀錄 (含防呆)
+// =======================
+void addExpense(const string& filename) {
+
+    string d, i, c;
+    int a;
+
+    cout << "日期 (YYYYMMDD): ";
+    cin >> d;
+
+    cout << "項目名稱: ";
+    cin >> i;
+
+    cout << "分類 (food/traffic/etc): ";
+    cin >> c;
+
+    cout << "金額: ";
+
+    while (!(cin >> a)) {
+        cout << "輸入錯誤，請輸入數字: ";
+        cin.clear();
+        cin.ignore(1000, '\n');
+    }
+
+    while (a < 0) {
+        cout << "金額不能為負數，請重新輸入: ";
+        cin >> a;
+    }
+
+    Expense e(d, i, c, a);
+
+    ofstream outFile(filename, ios::app);
+
+    outFile << e.date << " "
+            << e.item << " "
+            << e.category << " "
+            << e.amount << endl;
+
+    outFile.close();
+
+    cout << ">> 已成功存檔！" << endl;
+}
+
+// =======================
+// 搜尋功能
+// =======================
+void searchItem(const vector<Expense>& list) {
+
+    string key;
+    bool found = false;
+
+    cout << "請輸入搜尋關鍵字: ";
+    cin >> key;
+
+    cout << "\n--- 搜尋結果 ---" << endl;
+
+    for (const Expense& e : list) {
+
+        if (e.item.find(key) != string::npos ||
+            e.category.find(key) != string::npos) {
+
+            e.display();
+            found = true;
+        }
+    }
+
+    if (!found) {
+        cout << "找不到相關紀錄。" << endl;
+    }
+
+    cout << "----------------" << endl;
+}
+
+// =======================
+// 日期查詢功能
+// =======================
+void searchByDate(const vector<Expense>& list) {
+
+    string targetDate;
+    bool found = false;
+
+    cout << "請輸入要查詢的日期 (YYYYMMDD): ";
+    cin >> targetDate;
+
+    cout << "\n--- 日期查詢結果 ---" << endl;
+
+    for (const Expense& e : list) {
+
+        if (e.date == targetDate) {
+            e.display();
+            found = true;
+        }
+    }
+
+    if (!found) {
+        cout << "該日期沒有消費紀錄。" << endl;
+    }
+
+    cout << "----------------------" << endl;
+}
+
+// =======================
+// 花費統計功能
+// =======================
+void totalExpense(const vector<Expense>& list) {
+
+    int total = 0;
+
+    for (const Expense& e : list) {
+        total += e.amount;
+    }
+
+    cout << "\n所有消費總額: " << total << " 元" << endl;
+}
+
+// =======================
+// 顯示選單
+// =======================
+void showMenu() {
+
+    cout << "\n=== 簡易 C++ 記帳系統 ===" << endl;
+    cout << "1. 新增支出" << endl;
+    cout << "2. 查看所有紀錄" << endl;
+    cout << "3. 搜尋紀錄" << endl;
+    cout << "4. 日期查詢" << endl;
+    cout << "5. 花費統計" << endl;
+    cout << "6. 離開" << endl;
+    cout << "請選擇: ";
+}
+
+// =======================
+// main
+// =======================
 int main() {
+
     string filename = "records.txt";
     int choice;
 
     while (true) {
-        cout << "\n=== 簡易 C++ 記帳系統 ===" << endl;
-        cout << "1. 新增支出\n2. 查看所有紀錄\n3. 離開\n請選擇: ";
-        if (!(cin >> choice)) break;
+
+        showMenu();
+
+        while (!(cin >> choice)) {
+            cout << "請輸入數字選項: ";
+            cin.clear();
+            cin.ignore(1000, '\n');
+        }
 
         if (choice == 1) {
-            Expense e;
-            cout << "日期 (YYYYMMDD): "; cin >> e.date;
-            cout << "項目名稱: "; cin >> e.item;
-            cout << "金額: "; cin >> e.amount;
 
-            ofstream outFile(filename, ios::app);
-            outFile << e.date << " " << e.item << " " << e.amount << endl;
-            outFile.close();
-            cout << ">> 已成功存檔！" << endl;
-        } 
+            addExpense(filename);
+
+        }
         else if (choice == 2) {
-            displayAll(filename);
-        } 
+
+            vector<Expense> list = loadExpenses(filename);
+            displayAll(list);
+
+        }
         else if (choice == 3) {
+
+            vector<Expense> list = loadExpenses(filename);
+            searchItem(list);
+
+        }
+        else if (choice == 4) {
+
+            vector<Expense> list = loadExpenses(filename);
+            searchByDate(list);
+
+        }
+        else if (choice == 5) {
+
+            vector<Expense> list = loadExpenses(filename);
+            totalExpense(list);
+
+        }
+        else if (choice == 6) {
+
+            cout << "程式結束。" << endl;
             break;
+
+        }
+        else {
+
+            cout << "請輸入正確選項。" << endl;
+
         }
     }
+
     return 0;
 }
